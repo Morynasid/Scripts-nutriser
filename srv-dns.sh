@@ -40,7 +40,8 @@ IFACE=$(ip route show default 2>/dev/null | awk '{print $5; exit}')
 echo "Interfaz detectada: $IFACE"
 
 paso "Comprobando acceso a internet (necesario para apt)"
-if ! ping -c2 -W3 archive.ubuntu.com >/dev/null 2>&1; then
+if ! getent hosts archive.ubuntu.com >/dev/null 2>&1 || \
+   ! timeout 15 bash -c 'exec 3<>/dev/tcp/archive.ubuntu.com/80' 2>/dev/null; then
     error "Sin internet. Deja la VM con DHCP (como viene por defecto) y vuelve a ejecutar."
 fi
 
@@ -64,8 +65,26 @@ timedatectl set-timezone America/Bogota
 paso "2/7 Instalando BIND9"
 
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get -y install bind9 bind9utils bind9-dnsutils
+export NEEDRESTART_MODE=a          # evita la pantalla de "reiniciar servicios"
+APT_OPTS=(-o DPkg::Lock::Timeout=600)
+
+# En el primer arranque Ubuntu suele estar actualizando en segundo plano y
+# apt esta bloqueado: se reintenta hasta 10 veces en vez de fallar
+intentar() {
+    local n
+    for n in {1..10}; do
+        "$@" && return 0
+        aviso "apt ocupado o fallo de red, reintento $n/10 en 30 s..."
+        sleep 30
+    done
+    error "No se pudo ejecutar: $*"
+}
+
+intentar apt-get "${APT_OPTS[@]}" update
+intentar apt-get "${APT_OPTS[@]}" -y install bind9 bind9utils bind9-dnsutils
+
+# Confirmar que quedo instalado ANTES de tocar la red
+command -v named >/dev/null || error "BIND9 no quedo instalado; no se aplica netplan"
 
 #=============================================================================
 # 3 - Opciones globales
