@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 ###############################################################################
-# srv-dns  -  BIND9  -  instalacion automatica
-# IPv4 172.19.1.4/24   IPv6 2801:BBA:1::4/64   VLAN 2 (DMZ)
+# srv-mail  -  POSTFIX + DOVECOT  -  instalacion automatica
+# IPv4 172.19.1.40/24   IPv6 2801:BBA:1::40/64   VLAN 2 (DMZ)
 # Ubuntu Server 24.04 - adaptador en PUENTE
 #
-# Uso:   sudo bash srv-dns.sh
+# Uso:   sudo bash srv-mail.sh
 #
-# Orden: primero se instala y configura todo con la red actual (DHCP, con
-# internet) y la IP fija se aplica AL FINAL, cuando BIND ya esta funcionando.
+# Deja dos buzones de prueba: jperez y mlopez, clave Giron2026
 ###############################################################################
 
 set -euo pipefail
@@ -15,19 +14,16 @@ set -euo pipefail
 #-----------------------------------------------------------------------------
 # Variables
 #-----------------------------------------------------------------------------
-HOSTNAME_SRV="srv-dns"
+HOSTNAME_SRV="srv-mail"
 DOMINIO="nutriser.com"
-IPV4="172.19.1.4"                  # coincide con el dns-server del DHCP del router
-IPV6="2801:BBA:1::4"
+IPV4="172.19.1.40"
+IPV6="2801:BBA:1::40"
 GW4="172.19.1.1"
 GW6="2801:BBA:1::1"
+DNS4="172.19.1.4"
 
-IP_WEB="172.19.1.20";   IP6_WEB="2801:BBA:1::20"
-IP_MAIL="172.19.1.40";  IP6_MAIL="2801:BBA:1::40"
-IP_VOIP="172.19.1.50";  IP6_VOIP="2801:BBA:1::50"
-
-DNS_BUCARAMANGA="172.17.1.4"       # para reenviar la zona vit.com
-SERIAL="$(date +%Y%m%d)01"
+USUARIOS=(jperez mlopez)
+PASS_USUARIOS="Giron2026"
 
 VERDE='\e[32m'; ROJO='\e[31m'; AMARILLO='\e[33m'; NC='\e[0m'
 paso()  { echo -e "\n${VERDE}==> $*${NC}"; }
@@ -58,16 +54,16 @@ paso "1/7 Hostname, /etc/hosts y zona horaria"
 cat > /etc/hosts <<EOF
 127.0.0.1       localhost
 ::1             localhost ip6-localhost ip6-loopback
-${IPV4}     ${HOSTNAME_SRV}.${DOMINIO}    ${HOSTNAME_SRV}
+${IPV4}    email.${DOMINIO}    ${HOSTNAME_SRV}
 EOF
 
 hostnamectl set-hostname "$HOSTNAME_SRV"
 timedatectl set-timezone America/Bogota
 
 #=============================================================================
-# 2 - Instalar BIND9 (todavia con la red DHCP)
+# 2 - Instalar Postfix sin asistente
 #=============================================================================
-paso "2/7 Instalando BIND9"
+paso "2/7 Instalando Postfix y Dovecot"
 
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
@@ -93,132 +89,103 @@ intentar() {
     error "No se pudo ejecutar: $*"
 }
 
+# Respuestas del asistente de Postfix, para que no pregunte nada
+debconf-set-selections <<EOF
+postfix postfix/main_mailer_type string Internet Site
+postfix postfix/mailname string ${DOMINIO}
+EOF
+
 intentar apt-get "${APT_OPTS[@]}" update
-intentar apt-get "${APT_OPTS[@]}" -y install bind9 bind9utils bind9-dnsutils
+intentar apt-get "${APT_OPTS[@]}" -y install postfix mailutils dovecot-imapd dovecot-pop3d
 
-command -v named >/dev/null || error "BIND9 no quedo instalado; no se aplica netplan"
+command -v postconf >/dev/null || error "Postfix no quedo instalado; no se aplica netplan"
 
 #=============================================================================
-# 3 - Opciones globales
+# 3 - Configurar Postfix
 #=============================================================================
-paso "3/7 Configurando BIND9"
+paso "3/7 Configurando Postfix"
 
-cat > /etc/bind/named.conf.options <<EOF
-acl redes-internas {
-    127.0.0.0/8;
-    ::1;
-    172.19.0.0/16;
-    172.16.0.0/16;
-    2801:BBA::/32;
-};
+postconf -e "myhostname = email.${DOMINIO}"
+postconf -e "mydomain = ${DOMINIO}"
+postconf -e "myorigin = \$mydomain"
+postconf -e "mydestination = \$myhostname, ${DOMINIO}, localhost.\$mydomain, localhost"
+postconf -e "inet_interfaces = all"
+postconf -e "inet_protocols = all"
+postconf -e "mynetworks = 127.0.0.0/8 [::1]/128 172.19.0.0/16 [2801:BBA::]/32"
+postconf -e "home_mailbox = Maildir/"
+postconf -e "smtpd_banner = \$myhostname ESMTP RASBI Giron"
+postconf -e "smtpd_recipient_restrictions = permit_mynetworks, reject_unauth_destination"
 
-options {
-    directory "/var/cache/bind";
+echo "--- parametros aplicados ---"
+postconf -n | grep -E "myhostname|mydomain|mydestination|mynetworks|home_mailbox"
 
-    recursion yes;
-    allow-query     { redes-internas; };
-    allow-recursion { redes-internas; };
+#=============================================================================
+# 4 - Configurar Dovecot
+#=============================================================================
+paso "4/7 Configurando Dovecot"
 
-    forwarders { 8.8.8.8; 8.8.4.4; };
-    forward only;
-
-    dnssec-validation no;
-
-    listen-on    { 127.0.0.1; ${IPV4}; };
-    listen-on-v6 { ::1; ${IPV6}; };
-};
+# Archivo propio: se carga de ultimo y pisa lo anterior sin tocar los originales
+cat > /etc/dovecot/conf.d/99-rasbi.conf <<'EOF'
+# Configuracion RASBI Giron
+mail_location = maildir:~/Maildir
+disable_plaintext_auth = no
+auth_mechanisms = plain login
+protocols = imap pop3
+listen = *, ::
 EOF
 
-#=============================================================================
-# 4 - Zonas
-#=============================================================================
-cat > /etc/bind/named.conf.local <<EOF
-zone "${DOMINIO}" {
-    type master;
-    file "/etc/bind/db.${DOMINIO}";
-};
-
-zone "1.19.172.in-addr.arpa" {
-    type master;
-    file "/etc/bind/db.172.19.1";
-};
-
-zone "vit.com" {
-    type forward;
-    forward only;
-    forwarders { ${DNS_BUCARAMANGA}; };
-};
-EOF
-
-# Zona directa
-cat > /etc/bind/db.${DOMINIO} <<EOF
-\$TTL    604800
-@   IN  SOA dns.${DOMINIO}. admin.${DOMINIO}. (
-            ${SERIAL}  ; Serial - subir en cada cambio
-            604800      ; Refresh
-            86400       ; Retry
-            2419200     ; Expire
-            604800 )    ; Negative TTL
-;
-@       IN  NS      dns.${DOMINIO}.
-@       IN  MX  10  email.${DOMINIO}.
-;
-dns     IN  A       ${IPV4}
-dns     IN  AAAA    ${IPV6}
-web     IN  A       ${IP_WEB}
-web     IN  AAAA    ${IP6_WEB}
-ftp     IN  A       ${IP_WEB}
-ftp     IN  AAAA    ${IP6_WEB}
-email   IN  A       ${IP_MAIL}
-email   IN  AAAA    ${IP6_MAIL}
-vop     IN  A       ${IP_VOIP}
-vop     IN  AAAA    ${IP6_VOIP}
-www     IN  CNAME   web.${DOMINIO}.
-EOF
-
-# Zona inversa
-cat > /etc/bind/db.172.19.1 <<EOF
-\$TTL    604800
-@   IN  SOA dns.${DOMINIO}. admin.${DOMINIO}. (
-            ${SERIAL} 604800 86400 2419200 604800 )
-;
-@       IN  NS      dns.${DOMINIO}.
-;
-4       IN  PTR     dns.${DOMINIO}.
-20      IN  PTR     web.${DOMINIO}.
-40      IN  PTR     email.${DOMINIO}.
-50      IN  PTR     vop.${DOMINIO}.
-EOF
+doveconf -n > /dev/null || error "Error de sintaxis en Dovecot"
 
 #=============================================================================
-# 5 - Comprobar sintaxis y arrancar BIND
+# 5 - Buzones de prueba
 #=============================================================================
-paso "4/7 Comprobando sintaxis y arrancando BIND"
+paso "5/7 Creando buzones"
 
-named-checkconf                                             || error "Error en named.conf"
-named-checkzone "$DOMINIO" /etc/bind/db.${DOMINIO}          || error "Error en zona directa"
-named-checkzone 1.19.172.in-addr.arpa /etc/bind/db.172.19.1 || error "Error en zona inversa"
+for u in "${USUARIOS[@]}"; do
+    if ! id "$u" >/dev/null 2>&1; then
+        adduser --disabled-password --gecos "" "$u"
+    fi
+    echo "${u}:${PASS_USUARIOS}" | chpasswd
+    mkdir -p "/home/${u}/Maildir"
+    chown -R "${u}:${u}" "/home/${u}/Maildir"
+    echo "  buzon ${u}@${DOMINIO} listo"
+done
 
-systemctl enable named
-systemctl restart named
-systemctl is-active --quiet named || error "named no arranco. Revisa: journalctl -u named"
-
-echo "Prueba local: web.${DOMINIO} -> $(dig @127.0.0.1 web.${DOMINIO} +short)"
+systemctl enable postfix dovecot
+systemctl restart postfix dovecot
+systemctl is-active --quiet postfix || error "Postfix no arranco: journalctl -u postfix"
+systemctl is-active --quiet dovecot || error "Dovecot no arranco: journalctl -u dovecot"
 
 #=============================================================================
-# 6 - Firewall
+# 6 - Prueba de envio local
 #=============================================================================
-paso "5/7 Firewall"
+paso "6/7 Prueba de envio"
 
+echo "Correo de prueba generado por el script de instalacion." \
+    | mail -s "Prueba RASBI Giron" "${USUARIOS[0]}@${DOMINIO}" || aviso "El envio fallo"
+sleep 4
+if ls "/home/${USUARIOS[0]}/Maildir/new/" >/dev/null 2>&1 && \
+   [[ -n "$(ls -A "/home/${USUARIOS[0]}/Maildir/new/" 2>/dev/null)" ]]; then
+    echo "Correo entregado en /home/${USUARIOS[0]}/Maildir/new/"
+else
+    aviso "El buzon esta vacio. Revisa: tail -30 /var/log/mail.log"
+fi
+
+ss -tlnp | grep -E ':25|:110|:143' || aviso "No se ven los puertos escuchando"
+
+#=============================================================================
+# 7 - Firewall
+#=============================================================================
 ufw allow 22/tcp
-ufw allow 53/tcp
-ufw allow 53/udp
+ufw allow 25/tcp
+ufw allow 110/tcp
+ufw allow 143/tcp
 ufw --force enable
 
 #=============================================================================
-# 7 - Red fija (AL FINAL)
+# 8 - Red fija (AL FINAL)
 #=============================================================================
-paso "6/7 Aplicando IP fija (netplan)"
+paso "7/7 Aplicando IP fija (netplan)"
 
 mkdir -p /root/netplan-backup
 find /etc/netplan -maxdepth 1 -name '*.yaml' ! -name '01-netcfg.yaml' \
@@ -246,7 +213,7 @@ network:
           via: ${GW6}
       nameservers:
         search: [${DOMINIO}]
-        addresses: [${IPV4}]
+        addresses: [${DNS4}]
 EOF
 chmod 600 /etc/netplan/01-netcfg.yaml
 
@@ -255,24 +222,28 @@ aviso "Reconecta a ${IPV4}."
 netplan apply
 sleep 3
 
-systemctl restart named
+systemctl restart postfix dovecot
 
 #=============================================================================
-# 8 - Pruebas finales
+# Pruebas finales
 #=============================================================================
-paso "7/7 Pruebas"
+paso "Pruebas"
 
 ip -br addr
-ping -c2 -W2 "$GW4" || aviso "No responde el gateway ${GW4} (normal si el router aun no esta montado)"
+ping -c2 -W2 "$GW4" || aviso "No responde el gateway ${GW4}"
+ss -tln | grep -E ':25|:110|:143'
 
-echo "dns  A    : $(dig @${IPV4} dns.${DOMINIO} +short)"
-echo "web  A    : $(dig @${IPV4} web.${DOMINIO} +short)"
-echo "web  AAAA : $(dig @${IPV4} web.${DOMINIO} AAAA +short)"
-echo "vop  A    : $(dig @${IPV4} vop.${DOMINIO} +short)"
-echo "PTR .20   : $(dig @${IPV4} -x ${IP_WEB} +short)"
-echo "MX        : $(dig @${IPV4} ${DOMINIO} MX +short)"
-echo "google    : $(dig @${IPV4} google.com +short | head -1)"
+echo -e "\n${VERDE}Listo. srv-mail configurado en ${IPV4} / ${IPV6}${NC}"
+cat <<EOF
 
-echo -e "\n${VERDE}Listo. srv-dns configurado en ${IPV4} / ${IPV6}${NC}"
-echo "Si 'google' sale vacio es que el laboratorio no tiene salida a internet:"
-echo "no afecta a la resolucion interna de ${DOMINIO}."
+ Clientes de correo (Thunderbird, Outlook):
+   IMAP  email.${DOMINIO}  puerto 143  sin cifrado, contrasena normal
+   POP3  email.${DOMINIO}  puerto 110  sin cifrado
+   SMTP  email.${DOMINIO}  puerto 25   sin cifrado, sin autenticacion
+
+ Buzones:  ${USUARIOS[0]}@${DOMINIO}  y  ${USUARIOS[1]}@${DOMINIO}
+ Clave:    ${PASS_USUARIOS}
+
+ Sin cifrado a proposito, es laboratorio. El registro MX de la zona ya apunta
+ a email.${DOMINIO}; si no resuelve, revisa que srv-dns este arriba.
+EOF
