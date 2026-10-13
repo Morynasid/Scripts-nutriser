@@ -124,17 +124,66 @@ postconf -n | grep -E "myhostname|mydomain|mydestination|mynetworks|home_mailbox
 #=============================================================================
 paso "4/7 Configurando Dovecot"
 
-# Archivo propio: se carga de ultimo y pisa lo anterior sin tocar los originales
+# La sintaxis cambio por completo en Dovecot 2.4: "mail_location" ya no existe
+# (se partio en mail_driver + mail_path) y "disable_plaintext_auth" paso a
+# llamarse "auth_allow_cleartext". Detectamos la version y escribimos la que toca.
+DV=$(dovecot --version 2>/dev/null | awk '{print $1}')
+DV_MAJ=${DV%%.*}
+DV_RESTO=${DV#*.}
+DV_MIN=${DV_RESTO%%.*}
+echo "Dovecot detectado: ${DV}"
+
+escribir_conf_23() {
 cat > /etc/dovecot/conf.d/99-rasbi.conf <<'EOF'
-# Configuracion RASBI Giron
+# Configuracion RASBI Giron - sintaxis Dovecot 2.3
 mail_location = maildir:~/Maildir
 disable_plaintext_auth = no
 auth_mechanisms = plain login
 protocols = imap pop3
-listen = *, ::
 EOF
+}
 
-doveconf -n > /dev/null || error "Error de sintaxis en Dovecot"
+escribir_conf_24() {
+cat > /etc/dovecot/conf.d/99-rasbi.conf <<'EOF'
+# Configuracion RASBI Giron - sintaxis Dovecot 2.4
+mail_driver = maildir
+mail_path = ~/Maildir
+auth_allow_cleartext = yes
+auth_mechanisms = plain login
+protocols {
+  imap = yes
+  pop3 = yes
+}
+EOF
+}
+
+escribir_conf_24_simple() {
+cat > /etc/dovecot/conf.d/99-rasbi.conf <<'EOF'
+# Configuracion RASBI Giron - sintaxis Dovecot 2.4 (sin bloque protocols)
+mail_driver = maildir
+mail_path = ~/Maildir
+auth_allow_cleartext = yes
+auth_mechanisms = plain login
+EOF
+}
+
+if (( DV_MAJ > 2 || ( DV_MAJ == 2 && DV_MIN >= 4 ) )); then
+    escribir_conf_24
+    if ! doveconf -n > /dev/null 2>&1; then
+        aviso "El bloque 'protocols' no fue aceptado, probando sin el"
+        escribir_conf_24_simple
+    fi
+else
+    escribir_conf_23
+fi
+
+# Si sigue fallando, mostrar el error completo en vez de ocultarlo
+if ! doveconf -n > /dev/null 2>&1; then
+    echo "--- salida de doveconf ---"
+    doveconf -n || true
+    error "Error de sintaxis en Dovecot (ver arriba)"
+fi
+echo "Configuracion de Dovecot valida"
 
 #=============================================================================
 # 5 - Buzones de prueba
