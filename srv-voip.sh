@@ -112,6 +112,12 @@ paso "3/6 Configurando extensiones"
 [[ -f /etc/asterisk/pjsip.conf.bak ]]      || cp /etc/asterisk/pjsip.conf      /etc/asterisk/pjsip.conf.bak
 [[ -f /etc/asterisk/extensions.conf.bak ]] || cp /etc/asterisk/extensions.conf /etc/asterisk/extensions.conf.bak
 
+# OJO: el nombre de la seccion [aor] DEBE ser igual al usuario que registra.
+# Asterisk busca el AOR por el usuario que llega en el REGISTER; si lo llamas
+# "aor1001" responde 404 con "AOR '' not found for endpoint '1001'": el telefono
+# nunca queda registrado y por lo tanto no puede RECIBIR llamadas (aunque si
+# pueda hacerlas, que es lo que confunde). Repetir [1001] con type distinto es
+# correcto, es como viene en el pjsip.conf.sample de Asterisk.
 cat > /etc/asterisk/pjsip.conf <<'EOF'
 [transport-udp]
 type=transport
@@ -124,7 +130,7 @@ context=interno
 disallow=all
 allow=ulaw,alaw
 auth=auth1001
-aors=aor1001
+aors=1001
 
 [auth1001]
 type=auth
@@ -132,7 +138,7 @@ auth_type=userpass
 username=1001
 password=Giron1001
 
-[aor1001]
+[1001]
 type=aor
 max_contacts=2
 remove_existing=yes
@@ -143,7 +149,7 @@ context=interno
 disallow=all
 allow=ulaw,alaw
 auth=auth1002
-aors=aor1002
+aors=1002
 
 [auth1002]
 type=auth
@@ -151,7 +157,7 @@ auth_type=userpass
 username=1002
 password=Giron1002
 
-[aor1002]
+[1002]
 type=aor
 max_contacts=2
 remove_existing=yes
@@ -162,7 +168,7 @@ context=interno
 disallow=all
 allow=ulaw,alaw
 auth=auth1003
-aors=aor1003
+aors=1003
 
 [auth1003]
 type=auth
@@ -170,7 +176,7 @@ auth_type=userpass
 username=1003
 password=Giron1003
 
-[aor1003]
+[1003]
 type=aor
 max_contacts=2
 remove_existing=yes
@@ -224,7 +230,7 @@ asterisk -rx "dialplan show interno" || true
 
 # Sin AOR el telefono registra pero NO puede recibir llamadas: Asterisk responde
 # 404 "AOR '' not found". Lo comprobamos aqui para no descubrirlo marcando.
-if ! asterisk -rx "pjsip show aors" 2>/dev/null | grep -q "aor1001"; then
+if ! asterisk -rx "pjsip show aors" 2>/dev/null | grep -qE "^ *Aor: *1001"; then
     aviso "Los AOR no se cargaron. Revisa /etc/asterisk/pjsip.conf y corre:"
     aviso "  sudo asterisk -rx 'pjsip reload'"
 else
