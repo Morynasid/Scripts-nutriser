@@ -66,13 +66,23 @@ export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
 APT_OPTS=(-o DPkg::Lock::Timeout=600 -o Acquire::ForceIPv4=true -o Acquire::Retries=3)
 
-cambiar_espejo() {
-    local f
+# El espejo de pais (co.archive.ubuntu.com) viene fallando, asi que pasamos al
+# repositorio general ANTES de la primera descarga, no como plan B.
+usar_espejo_general() {
+    local f cambios=0
     for f in /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list; do
-        [[ -f $f ]] && sed -i -E 's#http://[a-z]{2}\.archive\.ubuntu\.com#http://archive.ubuntu.com#g' "$f"
+        [[ -f $f ]] || continue
+        [[ -f "${f}.bak" ]] || cp "$f" "${f}.bak"
+        if grep -qE 'https?://[a-z]{2}\.archive\.ubuntu\.com' "$f"; then
+            sed -i -E 's#https?://[a-z]{2}\.archive\.ubuntu\.com#http://archive.ubuntu.com#g' "$f"
+            cambios=1
+        fi
     done
-    aviso "Espejo cambiado a archive.ubuntu.com"
-    apt-get "${APT_OPTS[@]}" update || true
+    if (( cambios )); then
+        aviso "Espejo de pais reemplazado por archive.ubuntu.com (copia en *.bak)"
+    else
+        echo "El espejo ya era archive.ubuntu.com, no se toca"
+    fi
 }
 
 intentar() {
@@ -80,12 +90,13 @@ intentar() {
     for n in {1..10}; do
         "$@" && return 0
         aviso "apt ocupado o fallo de red, reintento $n/10 en 30 s..."
-        [[ $n -eq 2 ]] && cambiar_espejo
+        [[ $n -eq 2 ]] && { apt-get "${APT_OPTS[@]}" update || true; }
         sleep 30
     done
     error "No se pudo ejecutar: $*"
 }
 
+usar_espejo_general
 intentar apt-get "${APT_OPTS[@]}" update
 intentar apt-get "${APT_OPTS[@]}" -y install asterisk asterisk-core-sounds-en
 
@@ -107,12 +118,6 @@ type=transport
 protocol=udp
 bind=0.0.0.0:5060
 
-[transport-udp6]
-type=transport
-protocol=udp
-bind=[::]:5060
-
-;---------------- Extension 1001 ----------------
 [1001]
 type=endpoint
 context=interno
@@ -120,7 +125,6 @@ disallow=all
 allow=ulaw,alaw
 auth=auth1001
 aors=aor1001
-callerid=Empleado 1001 <1001>
 
 [auth1001]
 type=auth
@@ -131,8 +135,8 @@ password=Giron1001
 [aor1001]
 type=aor
 max_contacts=2
+remove_existing=yes
 
-;---------------- Extension 1002 ----------------
 [1002]
 type=endpoint
 context=interno
@@ -140,7 +144,6 @@ disallow=all
 allow=ulaw,alaw
 auth=auth1002
 aors=aor1002
-callerid=Empleado 1002 <1002>
 
 [auth1002]
 type=auth
@@ -151,8 +154,8 @@ password=Giron1002
 [aor1002]
 type=aor
 max_contacts=2
+remove_existing=yes
 
-;---------------- Extension 1003 (movil wifi) ----------------
 [1003]
 type=endpoint
 context=interno
@@ -160,7 +163,6 @@ disallow=all
 allow=ulaw,alaw
 auth=auth1003
 aors=aor1003
-callerid=Movil WiFi <1003>
 
 [auth1003]
 type=auth
@@ -171,6 +173,7 @@ password=Giron1003
 [aor1003]
 type=aor
 max_contacts=2
+remove_existing=yes
 EOF
 
 #=============================================================================
@@ -216,7 +219,17 @@ systemctl is-active --quiet asterisk || error "Asterisk no arranco: journalctl -
 
 asterisk -rx "core show version" || aviso "La consola de Asterisk no respondio todavia"
 asterisk -rx "pjsip show endpoints" || true
+asterisk -rx "pjsip show aors" || true
 asterisk -rx "dialplan show interno" || true
+
+# Sin AOR el telefono registra pero NO puede recibir llamadas: Asterisk responde
+# 404 "AOR '' not found". Lo comprobamos aqui para no descubrirlo marcando.
+if ! asterisk -rx "pjsip show aors" 2>/dev/null | grep -q "aor1001"; then
+    aviso "Los AOR no se cargaron. Revisa /etc/asterisk/pjsip.conf y corre:"
+    aviso "  sudo asterisk -rx 'pjsip reload'"
+else
+    echo "AOR cargados correctamente (las extensiones podran recibir llamadas)"
+fi
 
 #=============================================================================
 # 6 - Firewall
