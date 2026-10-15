@@ -871,7 +871,10 @@ rsa_cert_file=/etc/ssl/nutriser/web.crt
 rsa_private_key_file=/etc/ssl/nutriser/web.key
 force_local_logins_ssl=YES
 force_local_data_ssl=YES
-ssl_tlsv1_2=YES
+# OJO: no existe "ssl_tlsv1_2". vsftpd solo acepta ssl_tlsv1, ssl_sslv2 y
+# ssl_sslv3; con ssl_tlsv1=YES, OpenSSL ya negocia TLS 1.2 o 1.3.
+# Ponerlo mal hace que vsftpd arranque y muera con status=2/INVALIDARGUMENT.
+ssl_tlsv1=YES
 ssl_sslv2=NO
 ssl_sslv3=NO
 require_ssl_reuse=NO
@@ -891,6 +894,14 @@ echo "$USUARIO_FTP" > /etc/vsftpd.userlist
 mkdir -p /var/run/vsftpd/empty
 systemctl enable vsftpd
 systemctl restart vsftpd
+sleep 2
+if ! systemctl is-active --quiet vsftpd; then
+    aviso "vsftpd no arranco. Error exacto:"
+    vsftpd /etc/vsftpd.conf 2>&1 | head -5 || true
+    aviso "Corrige /etc/vsftpd.conf y ejecuta: sudo systemctl restart vsftpd"
+else
+    echo "vsftpd activo y escuchando"
+fi
 
 #=============================================================================
 # 7 - Respaldo automatico del sitio
