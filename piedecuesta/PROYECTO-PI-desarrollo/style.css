@@ -1,0 +1,2419 @@
+/*=========================================================
+    FORTKORP
+    STYLE.CSS
+    PARTE 1
+=========================================================*/
+
+/*==========================
+        GOOGLE FONT
+===========================*/
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/*==========================
+        VARIABLES
+===========================*/
+
+:root{
+
+    --azul:#00BFFF;
+    --azulOscuro:#0094FF;
+    --negro:#05070D;
+    --gris:#11151F;
+    --grisClaro:#1A2130;
+    --blanco:#FFFFFF;
+    --texto:#D9D9D9;
+
+}
+
+/*==========================
+        RESET
+===========================*/
+
+*{
+
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    scroll-behavior:smooth;
+    font-family:'Poppins',sans-serif;
+
+}
+
+html{
+
+    scroll-behavior:smooth;
+
+}
+
+body{
+
+    background:var(--negro);
+    color:var(--blanco);
+    overflow-x:hidden;
+
+}
+
+img{
+
+    width:100%;
+    display:block;
+
+}
+
+a{
+
+    text-decoration:none;
+
+}
+
+ul{
+
+    list-style:none;
+
+}
+
+/*==========================
+        SCROLLBAR
+===========================*/
+
+::-webkit-scrollbar{
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#080A10;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:var(--azul);
+    border-radius:20px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:#33CFFF;
+
+}
+
+/*==========================
+        TITULOS
+===========================*/
+
+.titulo{
+
+    text-align:center;
+    margin-bottom:70px;
+
+}
+
+.titulo h2{
+
+    font-size:45px;
+    font-weight:700;
+    color:white;
+    margin-bottom:15px;
+
+}
+
+.titulo p{
+
+    color:#B8B8B8;
+    font-size:18px;
+
+}
+
+/*==========================
+        HEADER
+===========================*/
+
+header{
+
+    position:fixed;
+    top:0;
+    left:0;
+
+    width:100%;
+
+    z-index:999;
+
+    background:rgba(5,7,13,.90);
+
+    backdrop-filter:blur(15px);
+
+    transition:.4s;
+
+    border-bottom:1px solid rgba(0,191,255,.08);
+
+}
+
+/*==========================
+        NAVBAR
+===========================*/
+
+.navbar{
+
+    width:90%;
+    margin:auto;
+
+    height:90px;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+}
+
+/*==========================
+        LOGO
+===========================*/
+
+.logo h1{
+
+    color:white;
+
+    font-size:35px;
+
+    letter-spacing:3px;
+
+}
+
+.logo span{
+
+    color:var(--azul);
+
+}
+
+/*==========================
+        MENU
+===========================*/
+
+.menu{
+
+    display:flex;
+
+    gap:15px;
+
+}
+
+/*==========================
+        BOTONES MENU
+===========================*/
+
+.menu li a{
+
+    color:white;
+
+    padding:14px 24px;
+
+    border-radius:40px;
+
+    transition:.35s;
+
+    font-weight:500;
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+/*==========================
+        EFECTO GLOW
+===========================*/
+
+.menu li a:hover{
+
+    color:var(--azul);
+
+    border:1px solid var(--azul);
+
+    box-shadow:
+
+    0 0 10px var(--azul),
+
+    0 0 20px var(--azul),
+
+    0 0 40px rgba(0,191,255,.7);
+
+    background:rgba(0,191,255,.05);
+
+}
+
+/*==========================
+        MENU MOVIL
+===========================*/
+
+.menuMovil{
+
+    display:none;
+
+    font-size:30px;
+
+    color:white;
+
+    cursor:pointer;
+
+}
+
+/*==========================
+        HERO
+===========================*/
+
+.hero{
+
+    min-height:100vh;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    text-align:center;
+
+    position:relative;
+
+    padding:120px 8%;
+
+    background:
+
+    linear-gradient(rgba(5,7,13,.75),
+
+    rgba(5,7,13,.92)),
+
+    url("./img/somos.png");
+
+    background-size:cover;
+
+    background-position:center;
+
+    background-attachment:fixed;
+
+}
+
+/*==========================
+        HERO CONTENIDO
+===========================*/
+
+.heroContenido{
+
+    max-width:850px;
+
+}
+
+.heroContenido h3{
+
+    color:var(--azul);
+
+    font-size:22px;
+
+    letter-spacing:5px;
+
+    margin-bottom:20px;
+
+}
+
+.heroContenido h1{
+
+    font-size:80px;
+
+    margin-bottom:20px;
+
+    line-height:90px;
+
+}
+
+.heroContenido p{
+
+    color:#D8D8D8;
+
+    font-size:20px;
+
+    line-height:35px;
+
+    margin-bottom:40px;
+
+}
+
+/*==========================
+        BOTONES HERO
+===========================*/
+
+.heroBotones{
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:20px;
+
+    flex-wrap:wrap;
+
+}
+/*=========================================================
+    PARTE 2
+    HERO - BOTONES - ESTADÍSTICAS - NOSOTROS
+=========================================================*/
+
+/*==========================
+        BOTÓN PRINCIPAL
+===========================*/
+
+.btnPrincipal{
+
+    display:inline-block;
+    padding:16px 38px;
+    background:var(--azul);
+    color:#fff;
+    border-radius:50px;
+    font-weight:600;
+    transition:.4s;
+    border:2px solid var(--azul);
+    box-shadow:0 0 15px rgba(0,191,255,.45);
+
+}
+
+.btnPrincipal:hover{
+
+    transform:translateY(-5px);
+    background:transparent;
+    color:var(--azul);
+
+    box-shadow:
+    0 0 15px var(--azul),
+    0 0 35px var(--azul),
+    0 0 60px rgba(0,191,255,.6);
+
+}
+
+/*==========================
+        BOTÓN SECUNDARIO
+===========================*/
+
+.btnSecundario{
+
+    display:inline-block;
+    padding:16px 38px;
+    border:2px solid var(--azul);
+    color:white;
+    border-radius:50px;
+    transition:.4s;
+    font-weight:600;
+
+}
+
+.btnSecundario:hover{
+
+    background:var(--azul);
+    color:#000;
+
+    box-shadow:
+    0 0 15px var(--azul),
+    0 0 40px rgba(0,191,255,.6);
+
+}
+
+/*==========================
+        SCROLL
+===========================*/
+
+.scroll{
+
+    position:absolute;
+
+    bottom:40px;
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+}
+
+.scroll a{
+
+    color:white;
+
+    font-size:28px;
+
+    animation:flotar 1.8s infinite;
+
+}
+
+@keyframes flotar{
+
+0%{
+
+transform:translateY(0px);
+
+}
+
+50%{
+
+transform:translateY(12px);
+
+}
+
+100%{
+
+transform:translateY(0px);
+
+}
+
+}
+
+/*==========================
+      ESTADÍSTICAS
+===========================*/
+
+.estadisticas{
+
+    width:90%;
+
+    margin:auto;
+
+    margin-top:-70px;
+
+    position:relative;
+
+    z-index:50;
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:25px;
+
+}
+
+.dato{
+
+    background:var(--gris);
+
+    border-radius:20px;
+
+    padding:40px;
+
+    text-align:center;
+
+    transition:.4s;
+
+    border:1px solid rgba(0,191,255,.12);
+
+}
+
+.dato:hover{
+
+    transform:translateY(-10px);
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 20px rgba(0,191,255,.4),
+
+    0 0 40px rgba(0,191,255,.25);
+
+}
+
+.dato h2{
+
+    color:var(--azul);
+
+    font-size:45px;
+
+    margin-bottom:10px;
+
+}
+
+.dato p{
+
+    color:#d8d8d8;
+
+    font-size:17px;
+
+}
+
+/*==========================
+      NOSOTROS
+===========================*/
+
+.nosotros{
+
+    padding:130px 8%;
+
+}
+
+.contenedorNosotros{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:60px;
+
+    align-items:center;
+
+}
+
+.imagenNosotros{
+
+    overflow:hidden;
+
+    border-radius:25px;
+
+}
+
+.imagenNosotros img{
+
+    transition:.6s;
+
+    border-radius:25px;
+
+}
+
+.imagenNosotros:hover img{
+
+    transform:scale(1.08);
+
+}
+
+.textoNosotros h3{
+
+    font-size:40px;
+
+    margin-bottom:25px;
+
+}
+
+.textoNosotros p{
+
+    color:#d3d3d3;
+
+    line-height:33px;
+
+    margin-bottom:25px;
+
+    text-align:justify;
+
+}
+
+/*==========================
+     CARACTERÍSTICAS
+===========================*/
+
+.caracteristicas{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:20px;
+
+    margin-top:35px;
+
+}
+
+.caracteristicas div{
+
+    background:var(--gris);
+
+    padding:20px;
+
+    border-radius:15px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+    transition:.4s;
+
+    border:1px solid transparent;
+
+}
+
+.caracteristicas div:hover{
+
+    transform:translateY(-8px);
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 15px rgba(0,191,255,.45);
+
+}
+
+.caracteristicas i{
+
+    font-size:28px;
+
+    color:var(--azul);
+
+}
+
+.caracteristicas span{
+
+    color:white;
+
+    font-weight:500;
+
+}
+/*=========================================================
+    PARTE 3
+    OBJETIVOS - MISIÓN - VISIÓN - FRASE
+=========================================================*/
+
+/*==========================
+        OBJETIVOS
+===========================*/
+
+.objetivos{
+
+    padding:120px 8%;
+    background:#080B13;
+    position:relative;
+
+}
+
+.contenedorObjetivos{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:30px;
+
+}
+
+.objetivoCard{
+
+    background:rgba(17,21,31,.90);
+
+    backdrop-filter:blur(15px);
+
+    border:1px solid rgba(0,191,255,.12);
+
+    border-radius:20px;
+
+    padding:45px 30px;
+
+    text-align:center;
+
+    transition:.45s;
+
+    overflow:hidden;
+
+    position:relative;
+
+}
+
+.objetivoCard::before{
+
+    content:"";
+
+    position:absolute;
+
+    width:180px;
+    height:180px;
+
+    background:rgba(0,191,255,.12);
+
+    border-radius:50%;
+
+    top:-90px;
+    right:-90px;
+
+    transition:.5s;
+
+}
+
+.objetivoCard:hover::before{
+
+    transform:scale(2);
+
+}
+
+.objetivoCard:hover{
+
+    transform:translateY(-12px);
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 20px rgba(0,191,255,.40),
+
+    0 0 45px rgba(0,191,255,.25);
+
+}
+
+.objetivoCard i{
+
+    font-size:60px;
+
+    color:var(--azul);
+
+    margin-bottom:25px;
+
+}
+
+.objetivoCard h3{
+
+    font-size:28px;
+
+    margin-bottom:20px;
+
+}
+
+.objetivoCard p{
+
+    color:#D2D2D2;
+
+    line-height:30px;
+
+}
+
+/*==========================
+      MISIÓN Y VISIÓN
+===========================*/
+
+.misionVision{
+
+    padding:120px 8%;
+
+}
+
+.contenedorMV{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:40px;
+
+}
+
+.mvCard{
+
+    background:var(--gris);
+
+    padding:50px;
+
+    border-radius:25px;
+
+    transition:.45s;
+
+    border:1px solid rgba(0,191,255,.15);
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+.mvCard:hover{
+
+    transform:translateY(-12px);
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 20px rgba(0,191,255,.4),
+
+    0 0 55px rgba(0,191,255,.22);
+
+}
+
+.iconoMV{
+
+    width:90px;
+
+    height:90px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    margin-bottom:25px;
+
+    background:rgba(0,191,255,.12);
+
+    border:2px solid var(--azul);
+
+}
+
+.iconoMV i{
+
+    color:var(--azul);
+
+    font-size:40px;
+
+}
+
+.mvCard h2{
+
+    font-size:36px;
+
+    margin-bottom:20px;
+
+}
+
+.mvCard p{
+
+    color:#D6D6D6;
+
+    line-height:34px;
+
+    text-align:justify;
+
+}
+
+/*==========================
+      FRASE MOTIVACIONAL
+===========================*/
+
+.frase{
+
+    padding:120px 8%;
+
+    background:
+
+    linear-gradient(rgba(5,7,13,.92),
+
+    rgba(5,7,13,.92)),
+
+    url("./img/somos.png");
+
+    background-size:cover;
+
+    background-position:center;
+
+    background-attachment:fixed;
+
+    text-align:center;
+
+}
+
+.fraseContenido{
+
+    max-width:900px;
+
+    margin:auto;
+
+}
+
+.fraseContenido h2{
+
+    font-size:50px;
+
+    line-height:70px;
+
+    color:white;
+
+    margin-bottom:30px;
+
+}
+
+.fraseContenido p{
+
+    color:var(--azul);
+
+    font-size:24px;
+
+    letter-spacing:3px;
+
+}
+
+/*==========================
+      EFECTO DE LUZ
+===========================*/
+
+.frase::after{
+
+    content:"";
+
+    position:absolute;
+
+    width:250px;
+
+    height:250px;
+
+    background:rgba(0,191,255,.15);
+
+    filter:blur(100px);
+
+    right:5%;
+
+    margin-top:-100px;
+
+}
+/*=========================================================
+    PARTE 4
+    SERVICIOS
+=========================================================*/
+
+/*==========================
+        SERVICIOS
+===========================*/
+
+.servicios{
+
+    padding:120px 8%;
+    background:#05070D;
+    overflow:hidden;
+
+}
+
+.sliderServicios{
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:25px;
+
+}
+
+.contenedorSlider{
+
+    display:flex;
+    gap:30px;
+    overflow-x:auto;
+    scroll-behavior:smooth;
+    padding:20px;
+    width:100%;
+
+}
+
+.contenedorSlider::-webkit-scrollbar{
+
+    display:none;
+
+}
+
+/*==========================
+        TARJETAS
+===========================*/
+
+.servicioCard{
+
+    min-width:320px;
+    max-width:320px;
+
+    background:var(--gris);
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+    border:1px solid rgba(0,191,255,.15);
+
+    transition:.45s;
+
+    cursor:pointer;
+
+}
+
+.servicioCard:hover{
+
+    transform:translateY(-12px);
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 20px rgba(0,191,255,.45),
+
+    0 0 45px rgba(0,191,255,.25);
+
+}
+
+.servicioCard img{
+
+    height:230px;
+
+    object-fit:cover;
+
+    transition:.6s;
+
+}
+
+.servicioCard:hover img{
+
+    transform:scale(1.08);
+
+}
+
+/*==========================
+      INFORMACIÓN
+===========================*/
+
+.infoServicio{
+
+    padding:30px;
+
+    text-align:center;
+
+}
+
+.infoServicio i{
+
+    font-size:45px;
+
+    color:var(--azul);
+
+    margin-bottom:20px;
+
+}
+
+.infoServicio h3{
+
+    font-size:28px;
+
+    margin-bottom:15px;
+
+}
+
+.infoServicio p{
+
+    color:#d5d5d5;
+
+    line-height:30px;
+
+}
+
+/*==========================
+      BOTONES SLIDER
+===========================*/
+
+.btnSlider{
+
+    width:60px;
+
+    height:60px;
+
+    border:none;
+
+    border-radius:50%;
+
+    background:var(--gris);
+
+    color:white;
+
+    cursor:pointer;
+
+    transition:.35s;
+
+    font-size:22px;
+
+    border:2px solid rgba(0,191,255,.25);
+
+}
+
+.btnSlider:hover{
+
+    background:var(--azul);
+
+    color:black;
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 20px var(--azul),
+
+    0 0 45px rgba(0,191,255,.6);
+
+}
+
+/*==========================
+      EFECTO BORDE
+===========================*/
+
+.servicioCard::before{
+
+    content:"";
+
+    position:absolute;
+
+    width:100%;
+
+    height:4px;
+
+    background:var(--azul);
+
+    left:0;
+
+    top:0;
+
+    transform:scaleX(0);
+
+    transition:.4s;
+
+}
+
+.servicioCard:hover::before{
+
+    transform:scaleX(1);
+
+}
+/*=========================================================
+    PARTE 5
+    ATENCIÓN - BENEFICIOS
+=========================================================*/
+
+/*==========================
+        ATENCIÓN
+===========================*/
+
+.atencion{
+
+    padding:120px 8%;
+    background:#080B13;
+
+}
+
+.contenedorAtencion{
+
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:40px;
+
+}
+
+/*==========================
+        TARJETAS
+===========================*/
+
+.cardAtencion{
+
+    background:var(--gris);
+
+    border-radius:25px;
+
+    overflow:hidden;
+
+    padding:35px;
+
+    text-align:center;
+
+    transition:.45s;
+
+    border:1px solid rgba(0,191,255,.12);
+
+    position:relative;
+
+}
+
+.cardAtencion:hover{
+
+    transform:translateY(-12px);
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 20px rgba(0,191,255,.40),
+
+    0 0 50px rgba(0,191,255,.20);
+
+}
+
+/*==========================
+        ICONO
+===========================*/
+
+.iconoAtencion{
+
+    width:90px;
+    height:90px;
+
+    margin:auto;
+
+    border-radius:50%;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    background:rgba(0,191,255,.12);
+
+    border:2px solid var(--azul);
+
+    margin-bottom:25px;
+
+}
+
+.iconoAtencion i{
+
+    font-size:38px;
+
+    color:var(--azul);
+
+}
+
+/*==========================
+        TITULO
+===========================*/
+
+.cardAtencion h2{
+
+    font-size:34px;
+
+    margin-bottom:25px;
+
+}
+
+/*==========================
+        IMAGEN
+===========================*/
+
+.cardAtencion img{
+
+    width:100%;
+    height:260px;
+
+    object-fit:cover;
+
+    border-radius:18px;
+
+    transition:.5s;
+
+    margin-bottom:30px;
+
+}
+
+.cardAtencion:hover img{
+
+    transform:scale(1.05);
+
+}
+
+/*==========================
+        LISTA
+===========================*/
+
+.cardAtencion ul{
+
+    text-align:left;
+
+    margin-bottom:35px;
+
+}
+
+.cardAtencion ul li{
+
+    color:#D8D8D8;
+
+    padding:12px 0;
+
+    font-size:18px;
+
+}
+
+.cardAtencion ul li i{
+
+    color:var(--azul);
+
+    margin-right:10px;
+
+}
+
+/*==========================
+        BOTÓN
+===========================*/
+
+.cardAtencion .btnPrincipal{
+
+    width:100%;
+
+}
+
+/*=========================================================
+        BENEFICIOS
+=========================================================*/
+
+.beneficios{
+
+    padding:90px 8%;
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:25px;
+
+    background:#05070D;
+
+}
+
+.beneficio{
+
+    background:var(--gris);
+
+    border-radius:20px;
+
+    padding:35px;
+
+    text-align:center;
+
+    transition:.45s;
+
+    border:1px solid rgba(0,191,255,.12);
+
+}
+
+.beneficio:hover{
+
+    transform:translateY(-10px);
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 20px rgba(0,191,255,.35),
+
+    0 0 45px rgba(0,191,255,.20);
+
+}
+
+.beneficio i{
+
+    font-size:50px;
+
+    color:var(--azul);
+
+    margin-bottom:20px;
+
+}
+
+.beneficio h3{
+
+    font-size:24px;
+
+    margin-bottom:15px;
+
+}
+
+.beneficio p{
+
+    color:#D0D0D0;
+
+    line-height:28px;
+
+}
+/*=========================================================
+    PARTE 6
+    NUESTRO PERSONAL
+=========================================================*/
+
+.personal{
+
+    padding:120px 8%;
+
+    background:linear-gradient(180deg,#05070D,#0B101A);
+
+    overflow:hidden;
+
+}
+
+.contenedorCarrusel{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:25px;
+
+}
+
+.sliderPersonal{
+
+    display:flex;
+
+    gap:30px;
+
+    overflow-x:auto;
+
+    scroll-behavior:smooth;
+
+    width:100%;
+
+    padding:20px;
+
+}
+
+.sliderPersonal::-webkit-scrollbar{
+
+    display:none;
+
+}
+
+/*==========================
+        TARJETA
+===========================*/
+
+.cardPersonal{
+
+    min-width:320px;
+
+    background:var(--gris);
+
+    border-radius:25px;
+
+    padding:35px;
+
+    text-align:center;
+
+    border:1px solid rgba(0,191,255,.12);
+
+    transition:.45s;
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+.cardPersonal:hover{
+
+    transform:translateY(-12px);
+
+    border-color:var(--azul);
+
+    box-shadow:
+
+    0 0 20px rgba(0,191,255,.40),
+
+    0 0 55px rgba(0,191,255,.25);
+
+}
+
+/*==========================
+      FOTO
+===========================*/
+
+.avatarPlaceholder{
+
+    width:170px;
+
+    height:170px;
+
+    border-radius:50%;
+
+    margin:auto;
+
+    border:5px solid var(--azul);
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    background:rgba(0,191,255,.10);
+
+    color:var(--azul);
+
+    font-size:60px;
+
+    transition:.5s;
+
+}
+
+.cardPersonal:hover .avatarPlaceholder{
+
+    transform:scale(1.08);
+
+    box-shadow:
+
+    0 0 20px var(--azul),
+
+    0 0 50px rgba(0,191,255,.60);
+
+}
+
+/*==========================
+      NOMBRE
+===========================*/
+
+.cardPersonal h3{
+
+    margin-top:25px;
+
+    font-size:28px;
+
+}
+
+.cardPersonal span{
+
+    display:block;
+
+    color:var(--azul);
+
+    margin:15px 0;
+
+    font-weight:600;
+
+}
+
+.cardPersonal p{
+
+    color:#D6D6D6;
+
+    line-height:30px;
+
+}
+
+/*==========================
+      REDES
+===========================*/
+
+.redesPersonal{
+
+    margin-top:25px;
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:18px;
+
+}
+
+.redesPersonal a{
+
+    width:45px;
+
+    height:45px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    border-radius:50%;
+
+    color:white;
+
+    border:2px solid var(--azul);
+
+    transition:.4s;
+
+}
+
+.redesPersonal a:hover{
+
+    background:var(--azul);
+
+    color:black;
+
+    transform:translateY(-5px);
+
+    box-shadow:
+
+    0 0 15px var(--azul),
+
+    0 0 40px rgba(0,191,255,.60);
+
+}
+
+/*==========================
+      BOTONES
+===========================*/
+
+.btnPersonal{
+
+    width:65px;
+
+    height:65px;
+
+    border-radius:50%;
+
+    border:none;
+
+    cursor:pointer;
+
+    font-size:22px;
+
+    color:white;
+
+    background:var(--gris);
+
+    border:2px solid rgba(0,191,255,.20);
+
+    transition:.4s;
+
+}
+
+.btnPersonal:hover{
+
+    background:var(--azul);
+
+    color:black;
+
+    box-shadow:
+
+    0 0 20px var(--azul),
+
+    0 0 50px rgba(0,191,255,.60);
+
+}
+
+/*=========================================================
+        LLAMADO A LA ACCIÓN
+=========================================================*/
+
+.cta{
+
+    padding:120px 8%;
+
+    text-align:center;
+
+    background:
+
+    linear-gradient(rgba(5,7,13,.90),
+
+    rgba(5,7,13,.90)),
+
+    url("./img/somos.png");
+
+    background-size:cover;
+
+    background-position:center;
+
+    background-attachment:fixed;
+
+}
+
+.ctaContenido{
+
+    max-width:900px;
+
+    margin:auto;
+
+}
+
+.ctaContenido h2{
+
+    font-size:55px;
+
+    margin-bottom:25px;
+
+}
+
+.ctaContenido p{
+
+    color:#D8D8D8;
+
+    font-size:22px;
+
+    margin-bottom:40px;
+
+}
+/*=========================================================
+    PARTE 7
+    CONTACTO - FOOTER - BOTÓN SUBIR
+=========================================================*/
+
+/*==========================
+        CONTACTO
+===========================*/
+
+.contacto{
+
+    padding:120px 8%;
+    background:#080B13;
+
+}
+
+.contenedorContacto{
+
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:50px;
+    align-items:start;
+
+}
+
+/*==========================
+      INFORMACIÓN
+===========================*/
+
+.infoContacto{
+
+    background:var(--gris);
+    padding:40px;
+    border-radius:20px;
+    border:1px solid rgba(0,191,255,.12);
+
+}
+
+.infoContacto h2{
+
+    font-size:40px;
+    color:var(--azul);
+    margin-bottom:20px;
+
+}
+
+.infoContacto p{
+
+    color:#d5d5d5;
+    line-height:30px;
+    margin-bottom:30px;
+
+}
+
+.datoContacto{
+
+    display:flex;
+    align-items:center;
+    gap:20px;
+    margin-bottom:22px;
+
+}
+
+.datoContacto i{
+
+    width:55px;
+    height:55px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    border-radius:50%;
+
+    background:rgba(0,191,255,.10);
+
+    color:var(--azul);
+
+    font-size:22px;
+
+}
+
+/*==========================
+        REDES
+===========================*/
+
+.redes{
+
+    display:flex;
+    gap:18px;
+    margin-top:35px;
+
+}
+
+.redes a{
+
+    width:50px;
+    height:50px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    border-radius:50%;
+
+    border:2px solid var(--azul);
+
+    color:white;
+
+    transition:.4s;
+
+}
+
+.redes a:hover{
+
+    background:var(--azul);
+
+    color:black;
+
+    transform:translateY(-5px);
+
+    box-shadow:
+
+    0 0 20px var(--azul),
+
+    0 0 45px rgba(0,191,255,.55);
+
+}
+
+/*==========================
+        FORMULARIO
+===========================*/
+
+.formulario{
+
+    background:var(--gris);
+
+    padding:40px;
+
+    border-radius:20px;
+
+    border:1px solid rgba(0,191,255,.12);
+
+}
+
+.formulario input,
+.formulario textarea{
+
+    width:100%;
+
+    margin-bottom:20px;
+
+    padding:18px;
+
+    background:#111827;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    color:white;
+
+    border-radius:12px;
+
+    outline:none;
+
+    transition:.3s;
+
+}
+
+.formulario textarea{
+
+    height:170px;
+
+    resize:none;
+
+}
+
+.formulario input:focus,
+.formulario textarea:focus{
+
+    border-color:var(--azul);
+
+    box-shadow:0 0 15px rgba(0,191,255,.35);
+
+}
+
+.formulario button{
+
+    width:100%;
+
+    padding:18px;
+
+    border:none;
+
+    background:var(--azul);
+
+    color:black;
+
+    font-size:18px;
+
+    font-weight:700;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    transition:.4s;
+
+}
+
+.formulario button:hover{
+
+    box-shadow:
+
+    0 0 20px var(--azul),
+
+    0 0 45px rgba(0,191,255,.55);
+
+}
+
+/*==========================
+        MAPA
+===========================*/
+
+.mapa iframe{
+
+    width:100%;
+
+    height:450px;
+
+    border:none;
+
+}
+
+/*==========================
+        FOOTER
+===========================*/
+
+footer{
+
+    background:#05070D;
+
+    padding:80px 8% 30px;
+
+    border-top:1px solid rgba(0,191,255,.15);
+
+}
+
+.footerContenido{
+
+    display:grid;
+
+    grid-template-columns:2fr 1fr 1fr;
+
+    gap:50px;
+
+}
+
+.footerLogo h2{
+
+    font-size:42px;
+
+}
+
+.footerLogo span{
+
+    color:var(--azul);
+
+}
+
+.footerLogo p{
+
+    color:#cfcfcf;
+
+    margin-top:15px;
+
+}
+
+.footerMenu h3,
+.footerServicios h3{
+
+    margin-bottom:20px;
+
+    color:var(--azul);
+
+}
+
+.footerMenu a{
+
+    display:block;
+
+    color:#d5d5d5;
+
+    margin-bottom:12px;
+
+    transition:.3s;
+
+}
+
+.footerMenu a:hover{
+
+    color:var(--azul);
+
+    padding-left:8px;
+
+}
+
+.footerServicios p{
+
+    color:#d5d5d5;
+
+    margin-bottom:12px;
+
+}
+
+.copyright{
+
+    margin-top:50px;
+
+    border-top:1px solid rgba(255,255,255,.08);
+
+    padding-top:25px;
+
+    text-align:center;
+
+    color:#9d9d9d;
+
+}
+
+/*==========================
+      BOTÓN SUBIR
+===========================*/
+
+.subir{
+
+    position:fixed;
+
+    right:30px;
+
+    bottom:30px;
+
+    width:60px;
+
+    height:60px;
+
+    border-radius:50%;
+
+    background:var(--azul);
+
+    color:black;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:24px;
+
+    transition:.4s;
+
+    z-index:999;
+
+}
+
+.subir:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:
+
+    0 0 20px var(--azul),
+
+    0 0 45px rgba(0,191,255,.60);
+
+}
+/*=========================================================
+    PARTE 8
+    RESPONSIVE + ANIMACIONES
+=========================================================*/
+
+/*==========================
+      ANIMACIONES
+===========================*/
+
+@keyframes aparecer{
+
+    from{
+
+        opacity:0;
+        transform:translateY(60px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateY(0);
+
+    }
+
+}
+
+@keyframes brillo{
+
+    0%{
+
+        box-shadow:0 0 10px rgba(0,191,255,.2);
+
+    }
+
+    50%{
+
+        box-shadow:
+        0 0 20px rgba(0,191,255,.6),
+        0 0 40px rgba(0,191,255,.4);
+
+    }
+
+    100%{
+
+        box-shadow:0 0 10px rgba(0,191,255,.2);
+
+    }
+
+}
+
+.objetivoCard,
+.mvCard,
+.servicioCard,
+.cardAtencion,
+.cardPersonal,
+.beneficio,
+.dato{
+
+    animation:aparecer .8s ease;
+
+}
+
+.btnPrincipal{
+
+    animation:brillo 2s infinite;
+
+}
+
+/*==========================
+      TABLET
+===========================*/
+
+@media(max-width:1100px){
+
+.contenedorNosotros{
+
+grid-template-columns:1fr;
+
+}
+
+.contenedorMV{
+
+grid-template-columns:1fr;
+
+}
+
+.contenedorObjetivos{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+.contenedorAtencion{
+
+grid-template-columns:1fr;
+
+}
+
+.footerContenido{
+
+grid-template-columns:1fr;
+
+}
+
+.estadisticas{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+.beneficios{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+.heroContenido h1{
+
+font-size:60px;
+
+}
+
+}
+
+/*==========================
+      CELULARES
+===========================*/
+
+@media(max-width:768px){
+
+.navbar{
+
+height:80px;
+
+}
+
+.menu{
+
+display:none;
+
+}
+
+.menuMovil{
+
+display:block;
+
+}
+
+.hero{
+
+padding:120px 20px;
+
+}
+
+.heroContenido h1{
+
+font-size:45px;
+
+line-height:55px;
+
+}
+
+.heroContenido h3{
+
+font-size:18px;
+
+}
+
+.heroContenido p{
+
+font-size:17px;
+
+line-height:30px;
+
+}
+
+.heroBotones{
+
+flex-direction:column;
+
+}
+
+.btnPrincipal,
+.btnSecundario{
+
+width:100%;
+
+text-align:center;
+
+}
+
+.estadisticas{
+
+grid-template-columns:1fr;
+
+}
+
+.contenedorObjetivos{
+
+grid-template-columns:1fr;
+
+}
+
+.caracteristicas{
+
+grid-template-columns:1fr;
+
+}
+
+.beneficios{
+
+grid-template-columns:1fr;
+
+}
+
+.contenedorContacto{
+
+grid-template-columns:1fr;
+
+}
+
+.footerContenido{
+
+grid-template-columns:1fr;
+
+text-align:center;
+
+}
+
+.redes{
+
+justify-content:center;
+
+}
+
+.sliderPersonal{
+
+gap:20px;
+
+}
+
+.contenedorSlider{
+
+gap:20px;
+
+}
+
+.btnSlider,
+.btnPersonal{
+
+display:none;
+
+}
+
+.titulo h2{
+
+font-size:34px;
+
+}
+
+.textoNosotros h3{
+
+font-size:30px;
+
+}
+
+.ctaContenido h2{
+
+font-size:36px;
+
+}
+
+}
+
+/*==========================
+      PANTALLAS MUY GRANDES
+===========================*/
+
+@media(min-width:1600px){
+
+.heroContenido{
+
+max-width:1100px;
+
+}
+
+.heroContenido h1{
+
+font-size:95px;
+
+}
+
+.heroContenido p{
+
+font-size:24px;
+
+}
+
+.navbar{
+
+width:80%;
+
+}
+
+}
+.subir{
+
+opacity:0;
+
+pointer-events:none;
+
+transition:.4s;
+
+}

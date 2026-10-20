@@ -1,0 +1,10 @@
+# Los .sh se guardan SIEMPRE con saltos de linea Unix, aunque se editen en
+# Windows. Sin esto, bash falla con "$'\r': command not found" al ejecutarlos.
+* text=auto eol=lf
+*.sh text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
