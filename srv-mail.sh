@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 ###############################################################################
-# srv-mail  -  POSTFIX + DOVECOT  -  instalacion automatica
+# srv-mail  -  POSTFIX + DOVECOT (entrega por LMTP)  -  SEDE GIRON
 # IPv4 172.19.1.40/24   IPv6 2801:BBA:1::40/64   VLAN 2 (DMZ)
-# Ubuntu Server 24.04 - adaptador en PUENTE
+# Ubuntu Server - adaptador en PUENTE
 #
 # Uso:   sudo bash srv-mail.sh
 #
-# Deja dos buzones de prueba: jperez y mlopez, clave Giron2026
+# POR QUE LMTP:
+#   Antes Postfix escribia el Maildir por su cuenta (home_mailbox) y Dovecot
+#   lo leia despues. Si los indices de Dovecot quedaban desfasados, el correo
+#   estaba en disco pero el cliente veia la bandeja vacia -- sin ningun error.
+#   Con LMTP, Postfix le pasa el mensaje a Dovecot y es Dovecot quien escribe
+#   y lo indexa en el mismo acto. No puede haber desfase.
+#
+# El script termina enviando un correo de prueba de verdad y comprobando que
+# aparece en INBOX. Si no aparece, falla y muestra el diagnostico, en vez de
+# dejarte descubrirlo al configurar Thunderbird.
 ###############################################################################
 
 set -euo pipefail
@@ -49,7 +58,7 @@ fi
 #=============================================================================
 # 1 - Hostname, hosts y zona horaria
 #=============================================================================
-paso "1/7 Hostname, /etc/hosts y zona horaria"
+paso "1/9 Hostname, /etc/hosts y zona horaria"
 
 cat > /etc/hosts <<EOF
 127.0.0.1       localhost
@@ -61,9 +70,9 @@ hostnamectl set-hostname "$HOSTNAME_SRV"
 timedatectl set-timezone America/Bogota
 
 #=============================================================================
-# 2 - Instalar Postfix sin asistente
+# 2 - Instalar paquetes
 #=============================================================================
-paso "2/7 Instalando Postfix y Dovecot"
+paso "2/9 Instalando Postfix y Dovecot"
 
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
@@ -107,14 +116,117 @@ EOF
 
 usar_espejo_general
 intentar apt-get "${APT_OPTS[@]}" update
-intentar apt-get "${APT_OPTS[@]}" -y install postfix mailutils dovecot-imapd dovecot-pop3d
+intentar apt-get "${APT_OPTS[@]}" -y install \
+    postfix mailutils dovecot-core dovecot-imapd dovecot-pop3d dovecot-lmtpd
 
 command -v postconf >/dev/null || error "Postfix no quedo instalado; no se aplica netplan"
+command -v doveconf >/dev/null || error "Dovecot no quedo instalado; no se aplica netplan"
+
+DV=$(dovecot --version 2>/dev/null | awk '{print $1}')
+DV_MAJ=${DV%%.*}; DV_RESTO=${DV#*.}; DV_MIN=${DV_RESTO%%.*}
+echo "Dovecot detectado: ${DV}"
 
 #=============================================================================
-# 3 - Configurar Postfix
+# 3 - Usuarios y buzones (ANTES de arrancar Dovecot)
 #=============================================================================
-paso "3/7 Configurando Postfix"
+paso "3/9 Creando usuarios y buzones"
+
+systemctl stop dovecot 2>/dev/null || true
+
+for u in "${USUARIOS[@]}"; do
+    if ! id "$u" >/dev/null 2>&1; then
+        adduser --disabled-password --gecos "" "$u"
+    fi
+    echo "${u}:${PASS_USUARIOS}" | chpasswd
+
+    # Maildir con su estructura completa
+    mkdir -p "/home/${u}/Maildir"/{cur,new,tmp}
+
+    # Borrar indices de ejecuciones anteriores: si el script ya corrio con una
+    # configuracion rota, los indices viejos hacen que Dovecot informe la
+    # bandeja vacia aunque los correos esten en new/.
+    rm -f  "/home/${u}/Maildir"/dovecot.* "/home/${u}/Maildir"/dovecot-* \
+           "/home/${u}/Maildir"/subscriptions 2>/dev/null || true
+
+    chown -R "${u}:${u}" "/home/${u}"
+    chmod 700 "/home/${u}/Maildir"
+    echo "  buzon ${u}@${DOMINIO} listo"
+done
+
+#=============================================================================
+# 4 - Configurar Dovecot
+#=============================================================================
+paso "4/9 Configurando Dovecot"
+
+# El socket LMTP vive dentro del chroot de Postfix para que Postfix lo alcance.
+LMTP_SOCK="/var/spool/postfix/private/dovecot-lmtp"
+
+if (( DV_MAJ > 2 || ( DV_MAJ == 2 && DV_MIN >= 4 ) )); then
+cat > /etc/dovecot/conf.d/99-rasbi.conf <<EOF
+# ===== Configuracion RASBI Giron - Dovecot 2.4 =====
+# En 2.4 "mail_location" ya no existe: se partio en mail_driver + mail_path,
+# y "disable_plaintext_auth" paso a llamarse "auth_allow_cleartext".
+mail_driver = maildir
+mail_path = ~/Maildir
+
+# CLAVE: vaciar mail_inbox_path. El paquete de Ubuntu lo deja en
+# /var/mail/%{user}, lo que saca INBOX del Maildir y lo manda a un directorio
+# root:mail donde el usuario no puede escribir. Sintoma: el cliente autentica
+# bien pero al abrir la bandeja devuelve "[SERVERBUG] Internal error" y el log
+# dice "Mailbox INBOX: Failed to autocreate mailbox: Permission denied".
+mail_inbox_path =
+
+auth_allow_cleartext = yes
+auth_mechanisms = plain login
+
+protocols {
+  imap = yes
+  pop3 = yes
+  lmtp = yes
+}
+
+service lmtp {
+  unix_listener ${LMTP_SOCK} {
+    mode  = 0600
+    user  = postfix
+    group = postfix
+  }
+}
+EOF
+else
+cat > /etc/dovecot/conf.d/99-rasbi.conf <<EOF
+# ===== Configuracion RASBI Giron - Dovecot 2.3 =====
+mail_location = maildir:~/Maildir
+disable_plaintext_auth = no
+auth_mechanisms = plain login
+protocols = imap pop3 lmtp
+
+service lmtp {
+  unix_listener ${LMTP_SOCK} {
+    mode  = 0600
+    user  = postfix
+    group = postfix
+  }
+}
+EOF
+fi
+
+if ! doveconf -n > /dev/null 2>&1; then
+    echo "--- salida de doveconf ---"
+    doveconf -n || true
+    error "Error de sintaxis en Dovecot (ver arriba)"
+fi
+echo "Configuracion de Dovecot valida"
+
+systemctl enable dovecot >/dev/null
+systemctl restart dovecot
+sleep 3
+systemctl is-active --quiet dovecot || error "Dovecot no arranco: journalctl -u dovecot -n 30"
+
+#=============================================================================
+# 5 - Configurar Postfix para entregar por LMTP
+#=============================================================================
+paso "5/9 Configurando Postfix"
 
 postconf -e "myhostname = email.${DOMINIO}"
 postconf -e "mydomain = ${DOMINIO}"
@@ -123,119 +235,90 @@ postconf -e "mydestination = \$myhostname, ${DOMINIO}, localhost.\$mydomain, loc
 postconf -e "inet_interfaces = all"
 postconf -e "inet_protocols = all"
 postconf -e "mynetworks = 127.0.0.0/8 [::1]/128 172.19.0.0/16 [2801:BBA::]/32"
-postconf -e "home_mailbox = Maildir/"
 postconf -e "smtpd_banner = \$myhostname ESMTP RASBI Giron"
 postconf -e "smtpd_recipient_restrictions = permit_mynetworks, reject_unauth_destination"
 
+# La entrega la hace Dovecot, no el agente local de Postfix.
+postconf -e "mailbox_transport = lmtp:unix:private/dovecot-lmtp"
+postconf -X home_mailbox       2>/dev/null || true
+postconf -X mailbox_command    2>/dev/null || true
+
 echo "--- parametros aplicados ---"
-postconf -n | grep -E "myhostname|mydomain|mydestination|mynetworks|home_mailbox"
+postconf -n | grep -E "myhostname|mydestination|mynetworks|mailbox_transport"
 
-#=============================================================================
-# 4 - Configurar Dovecot
-#=============================================================================
-paso "4/7 Configurando Dovecot"
+systemctl enable postfix >/dev/null
+systemctl restart postfix
+sleep 2
+systemctl is-active --quiet postfix || error "Postfix no arranco: journalctl -u postfix -n 30"
 
-# La sintaxis cambio por completo en Dovecot 2.4: "mail_location" ya no existe
-# (se partio en mail_driver + mail_path) y "disable_plaintext_auth" paso a
-# llamarse "auth_allow_cleartext". Detectamos la version y escribimos la que toca.
-DV=$(dovecot --version 2>/dev/null | awk '{print $1}')
-DV_MAJ=${DV%%.*}
-DV_RESTO=${DV#*.}
-DV_MIN=${DV_RESTO%%.*}
-echo "Dovecot detectado: ${DV}"
-
-escribir_conf_23() {
-cat > /etc/dovecot/conf.d/99-rasbi.conf <<'EOF'
-# Configuracion RASBI Giron - sintaxis Dovecot 2.3
-mail_location = maildir:~/Maildir
-disable_plaintext_auth = no
-auth_mechanisms = plain login
-protocols = imap pop3
-EOF
-}
-
-escribir_conf_24() {
-cat > /etc/dovecot/conf.d/99-rasbi.conf <<'EOF'
-# Configuracion RASBI Giron - sintaxis Dovecot 2.4
-mail_driver = maildir
-mail_path = ~/Maildir
-auth_allow_cleartext = yes
-auth_mechanisms = plain login
-protocols {
-  imap = yes
-  pop3 = yes
-}
-EOF
-}
-
-escribir_conf_24_simple() {
-cat > /etc/dovecot/conf.d/99-rasbi.conf <<'EOF'
-# Configuracion RASBI Giron - sintaxis Dovecot 2.4 (sin bloque protocols)
-mail_driver = maildir
-mail_path = ~/Maildir
-auth_allow_cleartext = yes
-auth_mechanisms = plain login
-EOF
-}
-
-if (( DV_MAJ > 2 || ( DV_MAJ == 2 && DV_MIN >= 4 ) )); then
-    escribir_conf_24
-    if ! doveconf -n > /dev/null 2>&1; then
-        aviso "El bloque 'protocols' no fue aceptado, probando sin el"
-        escribir_conf_24_simple
-    fi
-else
-    escribir_conf_23
+# El socket LMTP tiene que existir o no se entrega nada
+if [[ ! -S "$LMTP_SOCK" ]]; then
+    aviso "No existe el socket ${LMTP_SOCK}"
+    aviso "Reiniciando Dovecot para crearlo..."
+    systemctl restart dovecot
+    sleep 3
 fi
-
-# Si sigue fallando, mostrar el error completo en vez de ocultarlo
-if ! doveconf -n > /dev/null 2>&1; then
-    echo "--- salida de doveconf ---"
-    doveconf -n || true
-    error "Error de sintaxis en Dovecot (ver arriba)"
-fi
-echo "Configuracion de Dovecot valida"
+[[ -S "$LMTP_SOCK" ]] || error "El socket LMTP no se creo. Revisa: doveconf -n | grep -A6 'service lmtp'"
+echo "Socket LMTP presente: ${LMTP_SOCK}"
 
 #=============================================================================
-# 5 - Buzones de prueba
+# 6 - Carpetas estandar para Thunderbird
 #=============================================================================
-paso "5/7 Creando buzones"
+paso "6/9 Creando carpetas (Sent, Drafts, Trash, Junk)"
 
 for u in "${USUARIOS[@]}"; do
-    if ! id "$u" >/dev/null 2>&1; then
-        adduser --disabled-password --gecos "" "$u"
-    fi
-    echo "${u}:${PASS_USUARIOS}" | chpasswd
-    mkdir -p "/home/${u}/Maildir"
-    chown -R "${u}:${u}" "/home/${u}/Maildir"
-    echo "  buzon ${u}@${DOMINIO} listo"
+    for carpeta in Sent Drafts Trash Junk; do
+        doveadm mailbox create -u "$u" "$carpeta" 2>/dev/null || true
+    done
+    doveadm mailbox subscribe -u "$u" INBOX Sent Drafts Trash Junk 2>/dev/null || true
+    echo "  carpetas de ${u}: $(doveadm mailbox list -u "$u" 2>/dev/null | tr '\n' ' ')"
 done
 
-systemctl enable postfix dovecot
-systemctl restart postfix dovecot
-systemctl is-active --quiet postfix || error "Postfix no arranco: journalctl -u postfix"
-systemctl is-active --quiet dovecot || error "Dovecot no arranco: journalctl -u dovecot"
-
 #=============================================================================
-# 6 - Prueba de envio local
+# 7 - PRUEBA REAL DE PUNTA A PUNTA
 #=============================================================================
-paso "6/7 Prueba de envio"
+paso "7/9 Enviando un correo de prueba y comprobando que llega"
 
-echo "Correo de prueba generado por el script de instalacion." \
-    | mail -s "Prueba RASBI Giron" "${USUARIOS[0]}@${DOMINIO}" || aviso "El envio fallo"
-sleep 4
-if ls "/home/${USUARIOS[0]}/Maildir/new/" >/dev/null 2>&1 && \
-   [[ -n "$(ls -A "/home/${USUARIOS[0]}/Maildir/new/" 2>/dev/null)" ]]; then
-    echo "Correo entregado en /home/${USUARIOS[0]}/Maildir/new/"
+DESTINO="${USUARIOS[0]}"
+REMITENTE="${USUARIOS[1]}"
+ANTES=$(doveadm mailbox status -u "$DESTINO" messages INBOX 2>/dev/null | grep -oE 'messages=[0-9]+' | cut -d= -f2)
+ANTES=${ANTES:-0}
+
+sendmail -f "${REMITENTE}@${DOMINIO}" "${DESTINO}@${DOMINIO}" <<EOF
+From: ${REMITENTE}@${DOMINIO}
+To: ${DESTINO}@${DOMINIO}
+Subject: Prueba de instalacion RASBI Giron
+
+Si estas leyendo esto desde Thunderbird, el correo funciona de punta a punta:
+Postfix acepto el mensaje y Dovecot lo escribio e indexo por LMTP.
+EOF
+
+OK=0
+for i in {1..15}; do
+    sleep 2
+    AHORA=$(doveadm mailbox status -u "$DESTINO" messages INBOX 2>/dev/null | grep -oE 'messages=[0-9]+' | cut -d= -f2)
+    AHORA=${AHORA:-0}
+    if (( AHORA > ANTES )); then OK=1; break; fi
+done
+
+if (( OK )); then
+    echo -e "${VERDE}Correo entregado e indexado. INBOX de ${DESTINO}: ${AHORA} mensaje(s).${NC}"
+    echo "Thunderbird va a ver esto mismo."
 else
-    aviso "El buzon esta vacio. Revisa: tail -30 /var/log/mail.log"
+    aviso "El correo NO aparecio en INBOX. Diagnostico:"
+    echo "--- mail.log ---";       tail -25 /var/log/mail.log 2>/dev/null || true
+    echo "--- cola ---";           mailq || true
+    echo "--- en disco ---";       ls -l "/home/${DESTINO}/Maildir/new/" "/home/${DESTINO}/Maildir/cur/" 2>/dev/null || true
+    echo "--- rutas dovecot ---";  doveconf -n | grep -E "mail_driver|mail_path|mail_inbox_path" || true
+    echo "--- estado INBOX ---";   doveadm mailbox status -u "$DESTINO" messages INBOX || true
+    error "La entrega fallo. No se aplica la IP fija para que puedas seguir investigando con internet."
 fi
 
-ss -tlnp | grep -E ':25|:110|:143' || aviso "No se ven los puertos escuchando"
+#=============================================================================
+# 8 - Firewall
+#=============================================================================
+paso "8/9 Firewall"
 
-#=============================================================================
-# 7 - Firewall
-#=============================================================================
 ufw allow 22/tcp
 ufw allow 25/tcp
 ufw allow 110/tcp
@@ -243,9 +326,9 @@ ufw allow 143/tcp
 ufw --force enable
 
 #=============================================================================
-# 8 - Red fija (AL FINAL)
+# 9 - Red fija (AL FINAL)
 #=============================================================================
-paso "7/7 Aplicando IP fija (netplan)"
+paso "9/9 Aplicando IP fija (netplan)"
 
 mkdir -p /root/netplan-backup
 find /etc/netplan -maxdepth 1 -name '*.yaml' ! -name '01-netcfg.yaml' \
@@ -283,27 +366,52 @@ netplan apply
 sleep 3
 
 systemctl restart postfix dovecot
+sleep 3
 
 #=============================================================================
-# Pruebas finales
+# Resumen
 #=============================================================================
-paso "Pruebas"
+paso "Comprobacion final"
 
 ip -br addr
-ping -c2 -W2 "$GW4" || aviso "No responde el gateway ${GW4}"
-ss -tln | grep -E ':25|:110|:143'
+ss -tln | grep -E ':25|:110|:143' || aviso "No se ven los puertos escuchando"
+for u in "${USUARIOS[@]}"; do
+    echo "INBOX de ${u}: $(doveadm mailbox status -u "$u" messages INBOX 2>/dev/null)"
+done
 
-echo -e "\n${VERDE}Listo. srv-mail configurado en ${IPV4} / ${IPV6}${NC}"
+echo -e "\n${VERDE}Listo. srv-mail en ${IPV4} / ${IPV6}${NC}"
 cat <<EOF
 
- Clientes de correo (Thunderbird, Outlook):
-   IMAP  email.${DOMINIO}  puerto 143  sin cifrado, contrasena normal
-   POP3  email.${DOMINIO}  puerto 110  sin cifrado
-   SMTP  email.${DOMINIO}  puerto 25   sin cifrado, sin autenticacion
+ ===== CONFIGURACION EXACTA PARA THUNDERBIRD =====
 
- Buzones:  ${USUARIOS[0]}@${DOMINIO}  y  ${USUARIOS[1]}@${DOMINIO}
- Clave:    ${PASS_USUARIOS}
+ Al crear la cuenta, pulsa "Configurar manualmente". NO uses la deteccion
+ automatica: busca puertos cifrados que este servidor no tiene.
 
- Sin cifrado a proposito, es laboratorio. El registro MX de la zona ya apunta
- a email.${DOMINIO}; si no resuelve, revisa que srv-dns este arriba.
+ ENTRADA
+   Protocolo .............. IMAP
+   Servidor ............... email.${DOMINIO}
+   Puerto ................. 143
+   Seguridad .............. Ninguna
+   Identificacion ......... Contrasena, transmitida de manera insegura
+   Nombre de usuario ...... ${USUARIOS[0]}          <-- SIN el @${DOMINIO}
+
+ SALIDA
+   Servidor ............... email.${DOMINIO}
+   Puerto ................. 25                     <-- NO 143
+   Seguridad .............. Ninguna
+   Identificacion ......... Sin autenticacion
+   Nombre de usuario ...... (vacio)
+
+ Contrasena de las dos cuentas: ${PASS_USUARIOS}
+ Segundo buzon para probar envios: ${USUARIOS[1]}
+
+ Los tres errores que mas cuestan:
+   1. Poner "${USUARIOS[0]}@${DOMINIO}" como usuario -> rechaza la contrasena
+      siempre. Dovecot autentica contra los usuarios de Linux.
+   2. Dejar el puerto 143 en el servidor de SALIDA -> responde Dovecot con un
+      saludo IMAP y Thunderbird aborta con "Error del servidor (SMTP)".
+   3. Dejar "Contrasena" en la identificacion de salida -> Postfix no ofrece
+      ese mecanismo y el envio falla.
+
+ En la bandeja de ${USUARIOS[0]} ya hay un correo de prueba esperando.
 EOF
